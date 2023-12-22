@@ -1,101 +1,112 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <cmath>
 
-// Максимальное количество вершин графа
-#define MAX_VERTICES 100
+#define ROWS 10 // задаем константу, определяющую число рядов
+#define COLS 10 // задаем константу, определяющую число столбцов
 
-// Структура для представления вершины графа
-typedef struct {
-    int x; // Координата X
-    int y; // Координата Y
-} Vertex;
+int queue[ROWS * COLS][2]; // задаем двумерный массив для хранения координат (x, y) 
+int front = -1, rear = -1; // задаем переменные для отслеживания начала и конца очереди
 
-// Структура для представления ребра графа
-typedef struct {
-    int u; // Начальная вершина
-    int v; // Конечная вершина
-    double weight; // Вес ребра (расстояние между вершинами)
-} Edge;
-
-// Структура для представления графа
-typedef struct {
-    int numVertices; // Количество вершин
-    int numEdges; // Количество ребер
-    Vertex vertices[MAX_VERTICES]; // Массив вершин
-    Edge edges[MAX_VERTICES * (MAX_VERTICES - 1) / 2]; // Массив ребер
-} Graph;
-
-// Функция для вычисления расстояния между двумя вершинами
-double distance(Vertex v1, Vertex v2) {
-    int dx = v2.x - v1.x;
-    int dy = v2.y - v1.y;
-    return sqrt(dx*dx + dy*dy);
+int isInsideGrid(int x, int y) {
+    return (x >= 0 && x < ROWS && y >= 0 && y < COLS); // проверка x и y на нахождение в пределах сетки
 }
 
-// Функция для генерации планарного графа
-void generateGraph(Graph* graph) {
-    printf("Введите количество вершин графа: ");
-    scanf("%d", &graph->numVertices);
-    
-    printf("Введите координаты каждой вершины:\n");
-    for (int i = 0; i < graph->numVertices; i++) {
-        printf("Вершина %d: ", i + 1);
-        scanf("%d %d", &graph->vertices[i].x, &graph->vertices[i].y);
+int isEmpty() {
+    return front == -1 && rear == -1; // проверка наличия очереди
+}
+
+void enqueue(int x, int y) {
+    if (isEmpty()) { 
+        front = rear = 0; // Если очередь пуста front = rear = 0 (установливаем начало и конец очереди на 0)
+    } else {
+        rear++; // Если очередь не пуста, увеличиваем rear(конец очереди) на 1
     }
-    
-    graph->numEdges = 0;
-    for (int i = 0; i < graph->numVertices; i++) {
-        for (int j = i + 1; j < graph->numVertices; j++) {
-            double weight = distance(graph->vertices[i], graph->vertices[j]);
-            // Проверяем, что ребро не пересекается с другими ребрами
-            bool intersects = false;
-            for (int k = 0; k < graph->numEdges; k++) {
-                Edge e = graph->edges[k];
-                // Проверяем, пересекается ли ребро с ребром e
-                // Если да, то устанавливаем intersects в true
-            }
-            if (!intersects) {
-                // Добавляем ребро в граф
-                graph->edges[graph->numEdges].u = i;
-                graph->edges[graph->numEdges].v = j;
-                graph->edges[graph->numEdges].weight = weight;
-                graph->numEdges++;
+    queue[rear][0] = x; // записываем x в очередь
+    queue[rear][1] = y; // записываем у в очередь
+}
+
+void dequeue() {
+    if (front == rear) {
+        front = rear = -1; // Если начало и конец очереди совпадают front = rear = -1 (Установливаем начало и конец очереди на -1)
+    } else {
+        front++; // Если начало и конец очереди не совпадают, увеличиваем front(начало очереди) на 1
+    }
+}
+
+int leeAlgorithm(int grid[ROWS][COLS], int startX, int startY, int endX, int endY) { // Объявление функции, работающей по алгоритму Ли
+    int dx[] = {-1, 0, 1, 0};  // массив смещения по вертикали
+    int dy[] = {0, 1, 0, -1};  // массив смещения по горизонтали
+
+    int visited[ROWS][COLS] = {0}; // Инициализация массива visited нулями
+    int distance[ROWS][COLS] = {0}; // Инициализация массива distance нулями
+
+    visited[startX][startY] = 1; // помечаем начальную вершину как посещенную
+    distance[startX][startY] = 0; // установливаем расстояние до начальной вершины равным 0
+
+    enqueue(startX, startY); // добавляем начальную вершину в очередь
+
+    while (!isEmpty()) { // Пока очередь не пуста
+        int x = queue[front][0]; // Получаем координату x из начала очереди
+        int y = queue[front][1]; // Получаем координату y из начала очереди
+        dequeue(); // удаляем вершину из начала очереди
+
+        if (x == endX && y == endY) { // Если текущая вершина равна конечной вершине
+            return distance[x][y]; // возвращем расстояние до конечной вершины
+        }
+
+        for (int i = 0; i < 4; i++) { // для каждого смещения
+            int newX = x + dx[i]; // Вычисляем новую координату x
+            int newY = y + dy[i]; // Вычисляем новую координату y
+ 
+            if (isInsideGrid(newX, newY) && !visited[newX][newY] && grid[newX][newY] != 0) { // если новая координата находится в пределах сетки, не посещена и не равна 0
+                visited[newX][newY] = 1; // помечаем новую вершину как посещенную
+                distance[newX][newY] = distance[x][y] + 1; // установливаем расстояние от начальной вершины до новой вершины
+                enqueue(newX, newY); // добавляем новую вершину в очередь
             }
         }
     }
+
+    return -1;  // кратчайший путь не найден
 }
 
-// Функция для нахождения кратчайшего пути в графе
-void findShortestPath(Graph* graph, int start, int end) {
-    // Имплементация алгоритма Дейкстры
-}
-
-// Функция для вывода графа на консоль
-void printGraph(Graph* graph) {
-    printf("Граф с %d вершинами и %d ребрами:\n", graph->numVertices, graph->numEdges);
-    printf("Вершины:\n");
-    for (int i = 0; i < graph->numVertices; i++) {
-        printf("%d: (%d, %d)\n", i, graph->vertices[i].x, graph->vertices[i].y);
-    }
-    printf("Ребра:\n");
-    for (int i = 0; i < graph->numEdges; i++) {
-        printf("%d - %d: %.2f", graph->edges[i].u, graph->edges[i].v, graph->edges[i].weight);
+void printGrid(int grid[ROWS][COLS]) { // функция вывода матрицы планарного графа на экран 
+    for (int i = 0; i < ROWS; i++) {
+        for (int j = 0; j < COLS; j++) {
+            printf("%d ", grid[i][j]);
+        }
+        printf("\n");
     }
 }
 
-int main() {
-    Graph graph;
-    generateGraph(&graph);
-    
-    int start, end;
-    printf("Введите начальную и конечную вершину для поиска кратчайшего пути: ");
-    scanf("%d %d", &start, &end);
-    
-    findShortestPath(&graph, start, end);
-    
-    printGraph(&graph);
-    
+int main() {  // Основная функция программы
+    int grid[ROWS][COLS] = { // задаем матрицу планарного графа
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+        {1, 0, 1, 0, 0, 0, 0, 1, 0, 1},
+        {1, 0, 1, 0, 1, 1, 0, 1, 0, 1},
+        {1, 0, 0, 0, 1, 0, 0, 0, 0, 1},
+        {1, 1, 1, 0, 1, 0, 1, 1, 0, 1},
+        {1, 0, 1, 0, 1, 0, 0, 0, 0, 1},
+        {1, 0, 1, 1, 1, 1, 1, 1, 0, 1},
+        {1, 0, 1, 0, 0, 0, 0, 1, 0, 1},
+        {1, 0, 1, 0, 1, 1, 0, 1, 0, 1},
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+    };
+
+    printf("Матрица планарного графа:\n");
+    printGrid(grid); //выводим матрицу планарного графа на экран 
+
+    int startX, startY, endX, endY; // Объявление переменных для координат начальной и конечной вершин
+    printf("\nВведите координаты начальной вершины (x, y): ");
+    scanf("%d %d", &startX, &startY); // Ввод координат начальной вершины
+    printf("Введите координаты конечной вершины (x, y): ");
+    scanf("%d %d", &endX, &endY); // Ввод координат конечной вершины
+
+    int shortestPath = leeAlgorithm(grid, startX, startY, endX, endY); // Вызов функции leeAlgorithm для поиска кратчайшего пути
+
+    if (shortestPath != -1) { // Если кратчайший путь найден, выводим его на экран 
+        printf("\nКратчайший путь между вершинами: %d", shortestPath);
+    } else {
+        printf("\nКратчайший путь не найден.\n"); // Если кратчайший путь не найден, выводим на экран данное сообещние
+    }
+
     return 0;
 }
