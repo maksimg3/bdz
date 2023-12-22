@@ -5,35 +5,9 @@
 #include <sys/stat.h>
 #include <ctime>
 #include <fcntl.h>
-def monitor_memory():
-    memory_usage = psutil.virtual_memory().percent
-    with open("monitoring.txt", "a") as file:
-        file.write(f"Memory usage: {memory_usage}% at {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-
-
-def monitor_cpu():
-    cpu_usage = psutil.cpu_percent(0.1)
-    with open("monitoring.txt", "a") as file:
-        file.write(f"CPU usage: {cpu_usage}% at {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-
-
-def monitor_disk():
-    disk_usage = psutil.disk_usage('/').percent
-    with open("monitoring.txt", "a") as file:
-        file.write(f"Disk usage: {disk_usage}% at {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-
-
-def measure_performance():
-    # Some performance measurement code here
-    with open("monitoring.txt", "a") as file:
-        file.write(f"Performance measurement at {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-
-
-def detect_security_threats():
-    # Some security threat detection code here
-    with open("monitoring.txt", "a") as file:
-        file.write(f"Security threats detected at {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-
+#include <sys/sysinfo.h>
+#include <sys/statvfs.h>
+#include <sys/resource.h>
 
 int main() {
     printf(" Результаты мониторинга системы успешно записаны в файл log.txt.\n");
@@ -59,6 +33,23 @@ int main() {
     printf("Current process ID: %d", pid);
     time_t current_time = time(NULL);
     printf("Current time: %s", ctime(&current_time));
+
+    // Получение информации об использовании оперативной памяти
+    struct sysinfo mem_info;
+    sysinfo(&mem_info);
+    printf("Total RAM: %ld MB", mem_info.totalram / 1024 / 1024);
+    printf("Free RAM: %ld MB", mem_info.freeram / 1024 / 1024);
+
+    // Получение информации об использовании процессора
+    struct rusage cpu_info;
+    getrusage(RUSAGE_SELF, &cpu_info);
+    printf("CPU Usage: %ld.%06ld seconds", cpu_info.ru_utime.tv_sec, cpu_info.ru_utime.tv_usec);
+
+    // Получение информации о дисковом пространстве
+    struct statvfs disk_info;
+    statvfs(".", &disk_info);
+    printf("Total Disk Space: %ld GB", (disk_info.f_blocks * disk_info.f_frsize) / 1024 / 1024 / 1024);
+    printf("Available Disk Space: %ld GB", (disk_info.f_bavail * disk_info.f_frsize) / 1024 / 1024 / 1024);
 
     // Закрытие файла
     close(fd);
